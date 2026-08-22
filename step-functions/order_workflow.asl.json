@@ -1,0 +1,66 @@
+{
+  "Comment": "Orquestación de procesamiento de órdenes e-commerce",
+  "StartAt": "ValidateOrder",
+  "States": {
+    "ValidateOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:ValidateOrderFunction:$LATEST",
+        "Payload.$": "$"
+      },
+      "ResultPath": "$.validationResult",
+      "Next": "ProcessPayment",
+      "Catch": [
+        {
+          "ErrorEquals": ["OrderValidationError", "States.ALL"],
+          "ResultPath": "$.errorInfo",
+          "Next": "SendToErrorQueue"
+        }
+      ]
+    },
+    "ProcessPayment": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:ProcessPaymentFunction:$LATEST",
+        "Payload.$": "$"
+      },
+      "ResultPath": "$.paymentResult",
+      "Retry": [
+        {
+          "ErrorEquals": ["PaymentGatewayTimeout", "ServiceUnavailable"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.errorInfo",
+          "Next": "SendToErrorQueue"
+        }
+      ],
+      "Next": "PersistAndNotify"
+    },
+    "PersistAndNotify": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:UpdateInventoryFunction:$LATEST",
+        "Payload.$": "$"
+      },
+      "End": true
+    },
+    "SendToErrorQueue": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl": "https://sqs.us-east-1.amazonaws.com/123456789012/order-processing-dlq",
+        "MessageBody.$": "$"
+      },
+      "End": true
+    }
+  }
+}
