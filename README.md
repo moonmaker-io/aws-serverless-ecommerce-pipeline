@@ -13,9 +13,9 @@ Arquitectura serverless desacoplada, resiliente y de alta disponibilidad diseña
                         │
                         ▼
                 [ AWS Step Functions ]
-                      ├──▶ Validar Orden (AWS Lambda)
-                      ├──▶ Procesar Pago (AWS Lambda) ──[ Fallo ]──▶ [ Amazon SQS (DLQ) ]
-                      └──▶ Guardar & Notificar (AWS Lambda)
+                        ├──▶ Validar Orden (AWS Lambda)
+                        ├──▶ Procesar Pago (AWS Lambda) ──[ Fallo ]──▶ [ Amazon SQS (DLQ) ]
+                        └──▶ Guardar & Notificar (AWS Lambda)
                         │
         ┌───────────────┴────────────────┐
         ▼                                ▼
